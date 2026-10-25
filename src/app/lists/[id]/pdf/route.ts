@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { currentUser } from "@/lib/auth";
-import { getList } from "@/lib/data";
+import { getList, getListImages } from "@/lib/data";
 import WishlistDocument from "@/pdf/WishlistDocument";
 
 export const runtime = "nodejs";
@@ -22,7 +22,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const data = await getList(Number((await params).id));
   if (!data) return new Response("Not found", { status: 404 });
 
-  const pdf = await renderToBuffer(createElement(WishlistDocument, { data }) as any);
+  const pictures = await getListImages(data.list.id);
+  const pdf = await renderToBuffer(createElement(WishlistDocument, { data, pictures }) as any);
   const name = fileName(data.list.title);
   return new Response(new Uint8Array(pdf), {
     headers: {

@@ -4,7 +4,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { items, lists, sections } from "@/db/schema";
+import { images, items, lists, sections } from "@/db/schema";
 import { checkLogin, endSession, requireUser, startSession } from "@/lib/auth";
 
 function clean(value: FormDataEntryValue | null | undefined): string | null {
@@ -85,13 +85,13 @@ export async function duplicateList(listId: number) {
       sectionMap.set(s.id, ns.id);
     }
     const oldItems = await tx.select().from(items).where(eq(items.listId, listId));
-    if (oldItems.length) {
-      await tx.insert(items).values(
-        oldItems.map(({ id: _id, createdAt: _c, ...it }) => ({
-          ...it,
-          listId: copy.id,
-          sectionId: it.sectionId ? (sectionMap.get(it.sectionId) ?? null) : null,
-        })),
+    for (const { id: oldId, createdAt: _c, ...it } of oldItems) {
+      const [ni] = await tx
+        .insert(items)
+        .values({ ...it, listId: copy.id, sectionId: it.sectionId ? (sectionMap.get(it.sectionId) ?? null) : null })
+        .returning({ id: items.id });
+      await tx.execute(
+        sql`insert into images (item_id, mime, data) select ${ni.id}, mime, data from images where item_id = ${oldId}`,
       );
     }
     return copy.id;
@@ -197,6 +197,11 @@ export async function saveItem(_prev: ItemState, form: FormData): Promise<ItemSt
     sectionId,
   };
 
+  const picture = parsePicture(form.get("picture"));
+  if (picture === "invalid") return { error: "That picture couldn't be read. Try a JPEG or PNG." };
+  const removePicture = form.get("removePicture") === "1";
+
+  let savedId = itemId;
   if (itemId) {
     const existing = await db.query.items.findFirst({
       where: and(eq(items.id, itemId), eq(items.listId, listId)),
@@ -208,10 +213,35 @@ export async function saveItem(_prev: ItemState, form: FormData): Promise<ItemSt
     await db.update(items).set({ ...values, position }).where(eq(items.id, itemId));
   } else {
     const position = await nextPosition(listId, sectionId);
-    await db.insert(items).values({ ...values, listId, position, createdBy: user });
+    const [created] = await db
+      .insert(items)
+      .values({ ...values, listId, position, createdBy: user })
+      .returning({ id: items.id });
+    savedId = created.id;
+  }
+
+  if (savedId && (picture || removePicture)) {
+    await db.delete(images).where(eq(images.itemId, savedId));
+    if (picture) await db.insert(images).values({ itemId: savedId, ...picture });
   }
   await touchList(listId);
   return { ok: true };
+}
+
+const MAX_PICTURE_BYTES = 1_500_000;
+
+// The browser sends pictures as data URLs, already shrunk to a sensible size.
+// Only JPEG and PNG are kept, because those are what the PDF can embed.
+function parsePicture(value: FormDataEntryValue | null): { mime: string; data: Buffer } | null | "invalid" {
+  if (typeof value !== "string" || !value) return null;
+  const match = /^data:(image\/(?:jpeg|png));base64,([A-Za-z0-9+/=]+)$/.exec(value);
+  if (!match) return "invalid";
+  const data = Buffer.from(match[2], "base64");
+  if (data.length === 0 || data.length > MAX_PICTURE_BYTES) return "invalid";
+  const jpeg = data[0] === 0xff && data[1] === 0xd8;
+  const png = data.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  if ((match[1] === "image/jpeg" && !jpeg) || (match[1] === "image/png" && !png)) return "invalid";
+  return { mime: match[1], data };
 }
 
 async function nextPosition(listId: number, sectionId: number | null) {

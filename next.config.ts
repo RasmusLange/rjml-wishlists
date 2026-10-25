@@ -6,6 +6,8 @@ const nextConfig: NextConfig = {
     "/lists/[id]/pdf": ["./src/pdf/fonts/**/*"],
   },
   serverExternalPackages: ["@react-pdf/renderer"],
+  // Pictures are sent with the wish form, so allow a bit more than the 1 MB default.
+  experimental: { serverActions: { bodySizeLimit: "3mb" } },
 };
 
 export default nextConfig;

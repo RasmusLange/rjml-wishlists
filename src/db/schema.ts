@@ -1,4 +1,6 @@
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { customType, integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+const bytea = customType<{ data: Buffer }>({ dataType: () => "bytea" });
 
 export const lists = pgTable("lists", {
   id: serial("id").primaryKey(),
@@ -36,6 +38,19 @@ export const items = pgTable("items", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// One picture per wish, kept apart from items so lists load without the image bytes.
+// Replacing a picture inserts a new row, so its id doubles as a cache key.
+export const images = pgTable("images", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id")
+    .notNull()
+    .unique()
+    .references(() => items.id, { onDelete: "cascade" }),
+  mime: text("mime").notNull(),
+  data: bytea("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type List = typeof lists.$inferSelect;
 export type Section = typeof sections.$inferSelect;
-export type Item = typeof items.$inferSelect;
+export type Item = typeof items.$inferSelect & { imageId: number | null };
