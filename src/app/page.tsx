@@ -61,6 +61,10 @@ export default async function Home() {
           ))}
         </div>
       )}
+
+      <p className="footnote">
+        Tip: add wishes straight from a shop's page with the <Link href="/bookmarklet">wishlist bookmark</Link>.
+      </p>
     </main>
   );
 }

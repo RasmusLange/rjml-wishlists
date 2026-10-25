@@ -5,7 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { images, items, lists, sections } from "@/db/schema";
-import { checkLogin, endSession, requireUser, setupProblem, startSession } from "@/lib/auth";
+import { checkLogin, endSession, requireUser, safeNext, setupProblem, startSession } from "@/lib/auth";
+import type { ProductInfo } from "@/lib/product";
+import { publicUrl, readPicture, readProductPage } from "@/lib/shopFetch";
 
 function clean(value: FormDataEntryValue | null | undefined): string | null {
   const s = typeof value === "string" ? value.trim() : "";
@@ -41,7 +43,7 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
   const name = checkLogin(String(form.get("name") ?? ""), String(form.get("password") ?? ""));
   if (!name) return { error: "That name and password don't match." };
   await startSession(name);
-  redirect("/");
+  redirect(safeNext(form.get("next")));
 }
 
 export async function logout() {
@@ -195,6 +197,7 @@ export async function saveItem(_prev: ItemState, form: FormData): Promise<ItemSt
     url,
     detail: clean(form.get("detail")),
     shop: clean(form.get("shop")),
+    price: clean(form.get("price")),
     note: clean(form.get("note")),
     sectionId,
   };
@@ -290,4 +293,26 @@ export async function reorderItems(
     }
   });
   await touchList(listId);
+}
+
+// ── Filling in a wish from a shop link ──
+
+export type ProductLookup = { info?: ProductInfo; picture?: string; error?: string };
+
+export async function lookUpProduct(link: string): Promise<ProductLookup> {
+  await requireUser();
+  const url = publicUrl(link.trim());
+  if (!url) return { error: "That link doesn't look right." };
+  const page = await readProductPage(url);
+  if ("error" in page) return { error: page.error };
+  const imageUrl = page.info.imageUrl ? publicUrl(page.info.imageUrl) : null;
+  const picture = imageUrl ? await readPicture(imageUrl) : null;
+  return { info: page.info, picture: picture ?? undefined };
+}
+
+// For the bookmarklet, which already read the page and only needs the picture.
+export async function fetchPicture(link: string): Promise<string | null> {
+  await requireUser();
+  const url = publicUrl(link.trim());
+  return url ? readPicture(url) : null;
 }
