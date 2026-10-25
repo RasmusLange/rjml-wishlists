@@ -1,17 +1,18 @@
 import { redirect } from "next/navigation";
-import { currentUser, getUsers } from "@/lib/auth";
+import { currentUser, getUsers, setupProblem } from "@/lib/auth";
 import LoginForm from "@/components/LoginForm";
 
 export default async function LoginPage() {
   if (await currentUser()) redirect("/");
   const names = getUsers().map((u) => u.name);
+  const problem = setupProblem();
   return (
     <main className="sheet login">
       <p className="eyebrow">Welcome back</p>
       <h1>Wishlists</h1>
-      {names.length === 0 ? (
+      {problem ? (
         <p className="error" style={{ marginTop: 24 }}>
-          No users are set up yet. Add APP_USERS to the environment settings.
+          {problem}
         </p>
       ) : (
         <LoginForm names={names} />
