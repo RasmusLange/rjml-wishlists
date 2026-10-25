@@ -22,10 +22,19 @@ export function getUsers(): AppUser[] {
     .filter((u) => u.name && u.password);
 }
 
-function secret() {
+// Explains what's wrong with the login setup, or returns null when it's fine.
+export function setupProblem(): string | null {
+  if (getUsers().length === 0) return "No users are set up yet. Add APP_USERS in the environment settings and redeploy.";
   const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) throw new Error("SESSION_SECRET must be set to a long random string.");
-  return new TextEncoder().encode(s);
+  if (!s) return "SESSION_SECRET is missing. Add it in the environment settings and redeploy.";
+  if (s.length < 16) return "SESSION_SECRET is too short. Use at least 16 characters (40+ is better) and redeploy.";
+  return null;
+}
+
+function secret() {
+  const problem = setupProblem();
+  if (problem) throw new Error(problem);
+  return new TextEncoder().encode(process.env.SESSION_SECRET);
 }
 
 // Compare HMACs so the check takes the same time whatever the input.
@@ -63,7 +72,7 @@ export async function endSession() {
 
 export async function currentUser(): Promise<string | null> {
   const token = (await cookies()).get(COOKIE)?.value;
-  if (!token) return null;
+  if (!token || setupProblem()) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
     const name = typeof payload.name === "string" ? payload.name : null;
