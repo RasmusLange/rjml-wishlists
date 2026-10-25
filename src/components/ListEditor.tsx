@@ -399,6 +399,7 @@ function ItemView({
   return (
     <div ref={ref} style={style} className={`item${dragging ? " dragging" : ""}${overlay ? " overlay" : ""}`}>
       {handle ?? <span className="handle">⋮⋮</span>}
+      {item.imageId && <img src={`/images/${item.imageId}`} alt="" className="thumb" loading="lazy" draggable={false} />}
       <div className="item-body">
         <div className="item-main">
           {item.url ? (

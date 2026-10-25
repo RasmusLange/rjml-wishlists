@@ -1,5 +1,5 @@
 import path from "node:path";
-import { Document, Font, Link, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Image, Link, Page, Path, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import type { ListWithItems } from "@/lib/data";
 import { groupItems } from "@/lib/data";
 import { shopFromUrl } from "@/lib/format";
@@ -45,6 +45,7 @@ const s = StyleSheet.create({
   groupLine: { flexGrow: 1, height: 0.75, marginLeft: 12, backgroundColor: c.hairline },
   item: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 0.75, borderBottomColor: c.hairline },
   last: { borderBottomWidth: 0 },
+  thumb: { width: 46, height: 46, marginRight: 14, borderRadius: 6, objectFit: "cover" },
   main: { flexGrow: 1, flexShrink: 1, paddingRight: 16 },
   name: { fontFamily: "Fraunces", fontWeight: 400, fontSize: 13, lineHeight: 1.25, color: c.ink, textDecoration: "none" },
   detail: { marginTop: 4, fontSize: 9, lineHeight: 1.5, color: c.grey },
@@ -64,7 +65,9 @@ function Arrow() {
   );
 }
 
-export default function WishlistDocument({ data }: { data: ListWithItems }) {
+type Pictures = Map<number, { mime: string; data: Buffer }>;
+
+export default function WishlistDocument({ data, pictures }: { data: ListWithItems; pictures: Pictures }) {
   const groups = groupItems(data).filter((g) => g.items.length > 0);
   return (
     <Document title={data.list.title} author={data.list.createdBy ?? undefined} creator="Wishlists">
@@ -85,8 +88,15 @@ export default function WishlistDocument({ data }: { data: ListWithItems }) {
             )}
             {g.items.map((it, i) => {
               const shop = it.shop ?? shopFromUrl(it.url);
+              const picture = pictures.get(it.id);
               return (
                 <View key={it.id} style={i === g.items.length - 1 ? [s.item, s.last] : s.item} wrap={false}>
+                  {picture && (
+                    <Image
+                      style={s.thumb}
+                      src={{ data: picture.data, format: picture.mime === "image/png" ? "png" : "jpg" }}
+                    />
+                  )}
                   <View style={s.main}>
                     {it.url ? (
                       <Link src={it.url} style={s.name}>
