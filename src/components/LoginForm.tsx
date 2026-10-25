@@ -3,10 +3,11 @@
 import { useActionState } from "react";
 import { login, type LoginState } from "@/app/actions";
 
-export default function LoginForm({ names }: { names: string[] }) {
+export default function LoginForm({ names, next }: { names: string[]; next: string }) {
   const [state, action, pending] = useActionState<LoginState, FormData>(login, {});
   return (
     <form action={action}>
+      <input type="hidden" name="next" value={next} />
       <div className="field">
         <span className="label">Who are you?</span>
         <div className="who" role="radiogroup">

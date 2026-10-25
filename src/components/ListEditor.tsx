@@ -410,14 +410,19 @@ function ItemView({
             <span className="item-name">{item.name}</span>
           )}
           {item.detail && <p className="item-detail">{item.detail}</p>}
-          {shop &&
-            (item.url ? (
-              <a className="shop" href={item.url} target="_blank" rel="noopener noreferrer">
-                {shop}
-              </a>
-            ) : (
-              <span className="shop">{shop}</span>
-            ))}
+          {(shop || item.price) && (
+            <div className="item-meta">
+              {shop &&
+                (item.url ? (
+                  <a className="shop" href={item.url} target="_blank" rel="noopener noreferrer">
+                    {shop}
+                  </a>
+                ) : (
+                  <span className="shop">{shop}</span>
+                ))}
+              {item.price && <span className="price">{item.price}</span>}
+            </div>
+          )}
         </div>
         {item.note && <span className="chip">{item.note}</span>}
       </div>

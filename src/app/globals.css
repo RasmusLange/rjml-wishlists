@@ -283,6 +283,9 @@ a.item-name:hover { color: var(--cobalt); text-decoration: underline; text-decor
   text-decoration: none;
 }
 a.shop::after { content: " ↗"; letter-spacing: 0; }
+.item-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-top: 8px; }
+.item-meta .shop { margin-top: 0; }
+.price { font-size: .8rem; font-weight: 500; color: var(--ink); }
 .chip {
   flex: none;
   padding: 5px 11px;
@@ -331,6 +334,9 @@ dialog h2 { margin: 0; font: 400 1.6rem/1.2 var(--serif); color: var(--cobalt); 
 .picture-preview.empty { display: grid; place-items: center; font-size: .72rem; color: var(--grey); border-style: dashed; }
 .picture-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.link-row { display: flex; gap: 8px; }
+.link-row .input { flex: 1; min-width: 0; }
+.link-row .btn { flex: none; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
 @media (max-width: 520px) {
@@ -344,3 +350,12 @@ dialog h2 { margin: 0; font: 400 1.6rem/1.2 var(--serif); color: var(--cobalt); 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+.footnote { margin-top: 40px; font-size: .85rem; color: var(--grey); }
+.footnote a { color: var(--cobalt); }
+.bookmarklet { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.bookmarklet-link { cursor: grab; }
+.steps { margin-top: 36px; }
+.steps h2 { margin: 24px 0 6px; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--cobalt); }
+.steps p, .steps ol { margin: 0; line-height: 1.6; }
+.steps ol { padding-left: 20px; }

@@ -32,6 +32,7 @@ export const items = pgTable("items", {
   url: text("url"),
   detail: text("detail"),
   shop: text("shop"),
+  price: text("price"),
   note: text("note"),
   position: integer("position").notNull().default(0),
   createdBy: text("created_by"),

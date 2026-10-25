@@ -53,6 +53,7 @@ const s = StyleSheet.create({
   detail: { marginTop: 4, fontSize: 9, lineHeight: 1.5, color: c.grey },
   shopRow: { marginTop: 6, flexDirection: "row", alignItems: "center" },
   shop: { fontWeight: 500, fontSize: 7, letterSpacing: 1.1, textTransform: "uppercase", color: c.cobaltSoft, textDecoration: "none" },
+  price: { marginLeft: 10, fontWeight: 500, fontSize: 8, color: c.ink },
   chip: { flexShrink: 0, maxWidth: "38%", alignSelf: "flex-start", marginTop: 1, paddingVertical: 3.5, paddingHorizontal: 8, borderRadius: 999, backgroundColor: c.cobaltTint },
   chipText: { fontWeight: 500, fontSize: 7.5, lineHeight: 1.35, color: c.cobalt, textAlign: "center" },
   empty: { marginTop: 24, fontSize: 10, color: c.grey },
@@ -110,19 +111,22 @@ export default function WishlistDocument({ data, pictures }: { data: ListWithIte
                       <Text style={s.name}>{it.name}</Text>
                     )}
                     {it.detail && <Text style={s.detail}>{it.detail}</Text>}
-                    {shop &&
-                      (it.url ? (
-                        <View style={s.shopRow}>
-                          <Link src={it.url} style={s.shop}>
-                            {shop}
-                          </Link>
-                          <Arrow />
-                        </View>
-                      ) : (
-                        <View style={s.shopRow}>
-                          <Text style={s.shop}>{shop}</Text>
-                        </View>
-                      ))}
+                    {(shop || it.price) && (
+                      <View style={s.shopRow}>
+                        {shop &&
+                          (it.url ? (
+                            <>
+                              <Link src={it.url} style={s.shop}>
+                                {shop}
+                              </Link>
+                              <Arrow />
+                            </>
+                          ) : (
+                            <Text style={s.shop}>{shop}</Text>
+                          ))}
+                        {it.price && <Text style={shop ? s.price : [s.price, { marginLeft: 0 }]}>{it.price}</Text>}
+                      </View>
+                    )}
                   </View>
                   {it.note && (
                     <View style={s.chip}>

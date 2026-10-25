@@ -83,6 +83,13 @@ export async function currentUser(): Promise<string | null> {
   }
 }
 
+// Where to go after logging in: only paths on this site, never another site.
+export function safeNext(value: unknown): string {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/\\")
+    ? value
+    : "/";
+}
+
 export async function requireUser(): Promise<string> {
   const user = await currentUser();
   if (!user) redirect("/login");
