@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { items, lists, sections } from "@/db/schema";
-import { checkLogin, endSession, requireUser, startSession } from "@/lib/auth";
+import { checkLogin, endSession, requireUser, setupProblem, startSession } from "@/lib/auth";
 
 function clean(value: FormDataEntryValue | null | undefined): string | null {
   const s = typeof value === "string" ? value.trim() : "";
@@ -36,6 +36,8 @@ async function touchList(listId: number) {
 export type LoginState = { error?: string };
 
 export async function login(_prev: LoginState, form: FormData): Promise<LoginState> {
+  const problem = setupProblem();
+  if (problem) return { error: problem };
   const name = checkLogin(String(form.get("name") ?? ""), String(form.get("password") ?? ""));
   if (!name) return { error: "That name and password don't match." };
   await startSession(name);
