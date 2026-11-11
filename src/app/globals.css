@@ -172,8 +172,20 @@ h1, .title-input {
   margin-left: -6px;
   background: transparent;
 }
-.title-input:hover, .intro-input:hover { background: var(--cobalt-tint); }
-.title-input:focus, .intro-input:focus { outline: none; background: var(--card); box-shadow: 0 0 0 1px var(--hairline); }
+.title-input, .intro-input { background: var(--card); box-shadow: 0 0 0 1px var(--hairline); }
+.title-input:focus, .intro-input:focus { outline: none; box-shadow: 0 0 0 1px var(--cobalt-soft), 0 0 0 4px var(--cobalt-tint); }
+.list-head .lede { white-space: pre-line; }
+.edit-head {
+  margin-top: 10px;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--cobalt-soft);
+  font: 500 .78rem/1.4 var(--sans);
+  cursor: pointer;
+}
+.edit-head:hover { color: var(--cobalt); text-decoration: underline; text-underline-offset: 3px; }
+.head-buttons { display: flex; gap: 8px; margin-top: 14px; }
 .intro-input {
   margin-top: 14px;
   font: 400 .94rem/1.6 var(--sans);
@@ -185,6 +197,10 @@ h1, .title-input {
 .intro-input::placeholder { color: #a9b1ba; }
 
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+/* The template picker and Export button read as one control. */
+.export { display: inline-flex; }
+.export .select { width: auto; padding: 8px 30px 8px 14px; border-radius: 999px 0 0 999px; border-right: none; font-size: .84rem; color: var(--cobalt); }
+.export .btn { border-radius: 0 999px 999px 0; border-color: var(--hairline); }
 
 .group { margin-top: 44px; }
 .group.loose { margin-top: 28px; }

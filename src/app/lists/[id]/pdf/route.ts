@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { currentUser } from "@/lib/auth";
 import { getList, getListImages } from "@/lib/data";
+import { isTemplate } from "@/lib/templates";
 import WishlistDocument from "@/pdf/WishlistDocument";
 
 export const runtime = "nodejs";
@@ -23,7 +24,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!data) return new Response("Not found", { status: 404 });
 
   const pictures = await getListImages(data.list.id);
-  const pdf = await renderToBuffer(createElement(WishlistDocument, { data, pictures }) as any);
+  // ?template= previews another look without changing the list's saved choice.
+  const asked = new URL(request.url).searchParams.get("template");
+  const template = isTemplate(asked) ? asked : isTemplate(data.list.pdfTemplate) ? data.list.pdfTemplate : "classic";
+  const pdf = await renderToBuffer(createElement(WishlistDocument, { data, pictures, template }) as any);
   const name = fileName(data.list.title);
   return new Response(new Uint8Array(pdf), {
     headers: {
