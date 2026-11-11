@@ -27,9 +27,10 @@ const s = StyleSheet.create({
   groupTitle: { marginHorizontal: 8, fontFamily: "Fraunces", fontWeight: 400, fontSize: 14, color: c.pine },
   item: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 0.6, borderBottomColor: c.rule },
   last: { borderBottomWidth: 0 },
-  thumbTile: { width: 52, height: 52, marginRight: 14, padding: 4, borderRadius: 26, borderWidth: 0.8, borderColor: c.gold, backgroundColor: "#FFFFFF" },
-  thumb: { width: 42.4, height: 42.4, borderRadius: 21, objectFit: "contain" },
-  main: { flexGrow: 1, flexShrink: 1, paddingRight: 16 },
+  thumbTile: { flexShrink: 0, width: 52, height: 52, marginRight: 14, padding: 4, borderRadius: 8, borderWidth: 0.8, borderColor: c.gold, backgroundColor: "#FFFFFF" },
+  thumb: { width: 42.4, height: 42.4, objectFit: "contain" },
+  // flexBasis 0 lets long text wrap instead of pushing the tag off the page.
+  main: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingRight: 16 },
   name: { fontFamily: "Fraunces", fontWeight: 400, fontSize: 13, lineHeight: 1.25, color: c.pine, textDecoration: "none" },
   detail: { marginTop: 4, fontSize: 9, lineHeight: 1.5, color: c.grey },
   shopRow: { marginTop: 6, flexDirection: "row", alignItems: "center" },

@@ -23,9 +23,10 @@ const s = StyleSheet.create({
   item: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderBottomWidth: 0.75, borderBottomColor: c.hairline },
   last: { borderBottomWidth: 0 },
   // The whole picture sits on a white tile instead of being cropped to a square.
-  thumbTile: { width: 52, height: 52, marginRight: 14, padding: 4, borderRadius: 6, borderWidth: 0.75, borderColor: c.hairline, backgroundColor: "#FFFFFF" },
+  thumbTile: { flexShrink: 0, width: 52, height: 52, marginRight: 14, padding: 4, borderRadius: 6, borderWidth: 0.75, borderColor: c.hairline, backgroundColor: "#FFFFFF" },
   thumb: { width: 43.5, height: 43.5, objectFit: "contain" },
-  main: { flexGrow: 1, flexShrink: 1, paddingRight: 16 },
+  // flexBasis 0 lets long text wrap instead of pushing the tag off the page.
+  main: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingRight: 16 },
   name: { fontFamily: "Fraunces", fontWeight: 400, fontSize: 13, lineHeight: 1.25, color: c.ink, textDecoration: "none" },
   detail: { marginTop: 4, fontSize: 9, lineHeight: 1.5, color: c.grey },
   shopRow: { marginTop: 6, flexDirection: "row", alignItems: "center" },
