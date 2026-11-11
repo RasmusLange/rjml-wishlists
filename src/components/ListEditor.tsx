@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  closestCenter,
+  type CollisionDetection,
   useDroppable,
   useSensor,
   useSensors,
@@ -76,6 +78,34 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Where the pointer is during a drag, so drops follow the pointer rather than
+  // the middle of the dragged card (which can sit far from it on tall cards).
+  const pointerY = useRef<number | null>(null);
+
+  // Aim at the wish under the pointer, or the nearest one above or below it.
+  // A section's own drop area only counts while it's empty; otherwise it's as
+  // tall as all its wishes and would swallow every drop.
+  const collisionDetection: CollisionDetection = (args) => {
+    const targets = args.droppableContainers.filter(
+      (c) => typeof c.id === "number" || (layout[c.id as string]?.length ?? 0) === 0,
+    );
+    const pointer = args.pointerCoordinates;
+    if (!pointer) return closestCenter({ ...args, droppableContainers: targets }); // keyboard
+    pointerY.current = pointer.y;
+    let best: (typeof targets)[number] | null = null;
+    let bestDistance = Infinity;
+    for (const target of targets) {
+      const rect = args.droppableRects.get(target.id);
+      if (!rect) continue;
+      const distance = pointer.y < rect.top ? rect.top - pointer.y : pointer.y > rect.bottom ? pointer.y - rect.bottom : 0;
+      if (distance < bestDistance) {
+        best = target;
+        bestDistance = distance;
+      }
+    }
+    return best ? [{ id: best.id, data: { droppableContainer: best, value: bestDistance } }] : [];
+  };
+
   function findContainer(id: UniqueIdentifier, from: Layout = layout) {
     if (typeof id === "string" && id in from) return id;
     return Object.keys(from).find((k) => from[k].includes(id as number));
@@ -83,6 +113,7 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
 
   function onDragStart({ active }: DragStartEvent) {
     before.current = layout;
+    pointerY.current = null;
     setActiveId(active.id as number);
   }
 
@@ -96,8 +127,10 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
       const target = prev[to];
       let index = target.length;
       if (!(typeof over.id === "string" && over.id in prev)) {
+        // Over the top half of a wish lands above it, the bottom half below it.
         const translated = active.rect.current.translated;
-        const below = translated && translated.top > over.rect.top + over.rect.height / 2;
+        const y = pointerY.current ?? (translated ? translated.top + translated.height / 2 : 0);
+        const below = y > over.rect.top + over.rect.height / 2;
         index = target.indexOf(over.id as number) + (below ? 1 : 0);
       }
       return {
@@ -187,7 +220,9 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetection}
+        // Re-measure while dragging, since sections grow and shrink as wishes move between them.
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
