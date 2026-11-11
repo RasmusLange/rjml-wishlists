@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  closestCenter,
+  type CollisionDetection,
   useDroppable,
   useSensor,
   useSensors,
@@ -32,10 +34,12 @@ import {
   duplicateList,
   moveSection,
   renameSection,
+  setPdfTemplate,
   reorderItems,
   updateList,
 } from "@/app/actions";
 import { shopFromUrl } from "@/lib/format";
+import { TEMPLATES } from "@/lib/templates";
 import ItemDialog, { type DialogTarget } from "./ItemDialog";
 
 // Drop zones are keyed "loose" (no section) or "s<id>".
@@ -59,6 +63,8 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
   const [dialog, setDialog] = useState<DialogTarget | null>(null);
   const [newSection, setNewSection] = useState("");
   const [editingSection, setEditingSection] = useState<number | null>(null);
+  const [editingHeader, setEditingHeader] = useState(false);
+  const [template, setTemplate] = useState(list.pdfTemplate);
   const [pending, startTransition] = useTransition();
   const before = useRef<Layout | null>(null);
 
@@ -76,6 +82,34 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // Where the pointer is during a drag, so drops follow the pointer rather than
+  // the middle of the dragged card (which can sit far from it on tall cards).
+  const pointerY = useRef<number | null>(null);
+
+  // Aim at the wish under the pointer, or the nearest one above or below it.
+  // A section's own drop area only counts while it's empty; otherwise it's as
+  // tall as all its wishes and would swallow every drop.
+  const collisionDetection: CollisionDetection = (args) => {
+    const targets = args.droppableContainers.filter(
+      (c) => typeof c.id === "number" || (layout[c.id as string]?.length ?? 0) === 0,
+    );
+    const pointer = args.pointerCoordinates;
+    if (!pointer) return closestCenter({ ...args, droppableContainers: targets }); // keyboard
+    pointerY.current = pointer.y;
+    let best: (typeof targets)[number] | null = null;
+    let bestDistance = Infinity;
+    for (const target of targets) {
+      const rect = args.droppableRects.get(target.id);
+      if (!rect) continue;
+      const distance = pointer.y < rect.top ? rect.top - pointer.y : pointer.y > rect.bottom ? pointer.y - rect.bottom : 0;
+      if (distance < bestDistance) {
+        best = target;
+        bestDistance = distance;
+      }
+    }
+    return best ? [{ id: best.id, data: { droppableContainer: best, value: bestDistance } }] : [];
+  };
+
   function findContainer(id: UniqueIdentifier, from: Layout = layout) {
     if (typeof id === "string" && id in from) return id;
     return Object.keys(from).find((k) => from[k].includes(id as number));
@@ -83,6 +117,7 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
 
   function onDragStart({ active }: DragStartEvent) {
     before.current = layout;
+    pointerY.current = null;
     setActiveId(active.id as number);
   }
 
@@ -96,8 +131,10 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
       const target = prev[to];
       let index = target.length;
       if (!(typeof over.id === "string" && over.id in prev)) {
+        // Over the top half of a wish lands above it, the bottom half below it.
         const translated = active.rect.current.translated;
-        const below = translated && translated.top > over.rect.top + over.rect.height / 2;
+        const y = pointerY.current ?? (translated ? translated.top + translated.height / 2 : 0);
+        const below = y > over.rect.top + over.rect.height / 2;
         index = target.indexOf(over.id as number) + (below ? 1 : 0);
       }
       return {
@@ -129,7 +166,14 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
     if (before.current) setLayout(before.current);
   }
 
+  function startEditingHeader() {
+    setTitle(list.title);
+    setIntro(list.intro ?? "");
+    setEditingHeader(true);
+  }
+
   function saveHeader() {
+    setEditingHeader(false);
     if (title.trim() === list.title && (intro.trim() || null) === list.intro) return;
     startTransition(() => updateList(list.id, { title, intro }));
   }
@@ -152,34 +196,75 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
 
   return (
     <>
-      <div className="list-head">
-        <p className="eyebrow">Wishlist</p>
-        <input
-          className="title-input"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={saveHeader}
-          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-          aria-label="List title"
-        />
-        <textarea
-          className="intro-input"
-          value={intro}
-          onChange={(e) => setIntro(e.target.value)}
-          onBlur={saveHeader}
-          rows={1}
-          placeholder="Add a short intro (optional)"
-          aria-label="Intro"
-        />
-      </div>
+      {/* The title only changes through Edit and Save, so it can't be renamed by a stray click or keypress. */}
+      {editingHeader ? (
+        <form
+          className="list-head editing"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveHeader();
+          }}
+          onKeyDown={(e) => e.key === "Escape" && setEditingHeader(false)}
+        >
+          <p className="eyebrow">Wishlist</p>
+          <input
+            className="title-input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoFocus
+            aria-label="List title"
+          />
+          <textarea
+            className="intro-input"
+            value={intro}
+            onChange={(e) => setIntro(e.target.value)}
+            rows={2}
+            placeholder="Add a short intro (optional)"
+            aria-label="Intro"
+          />
+          <div className="head-buttons">
+            <button className="btn">Save</button>
+            <button type="button" className="btn secondary" onClick={() => setEditingHeader(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : (
+        <div className="list-head">
+          <p className="eyebrow">Wishlist</p>
+          <h1>{list.title}</h1>
+          {list.intro && <p className="lede">{list.intro}</p>}
+          <button className="edit-head" onClick={startEditingHeader}>
+            ✎ Edit title{list.intro ? " and intro" : " or add an intro"}
+          </button>
+        </div>
+      )}
 
       <div className="actions">
         <button className="btn" onClick={() => setDialog({ sectionId: sections.at(-1)?.id ?? null })}>
           + Add wish
         </button>
-        <a className="btn secondary" href={`/lists/${list.id}/pdf`} target="_blank" rel="noopener">
-          Export PDF
-        </a>
+        <div className="export">
+          <select
+            className="select"
+            value={template}
+            aria-label="PDF template"
+            title={TEMPLATES.find((t) => t.id === template)?.description}
+            onChange={(e) => {
+              setTemplate(e.target.value);
+              startTransition(() => setPdfTemplate(list.id, e.target.value));
+            }}
+          >
+            {TEMPLATES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <a className="btn secondary" href={`/lists/${list.id}/pdf?template=${template}`} target="_blank" rel="noopener">
+            Export PDF
+          </a>
+        </div>
         <button className="btn secondary" disabled={pending} onClick={() => startTransition(() => duplicateList(list.id))}>
           Duplicate
         </button>
@@ -187,7 +272,9 @@ export default function ListEditor({ list, sections, items }: { list: List; sect
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetection}
+        // Re-measure while dragging, since sections grow and shrink as wishes move between them.
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}

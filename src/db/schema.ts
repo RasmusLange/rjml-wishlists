@@ -6,6 +6,8 @@ export const lists = pgTable("lists", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   intro: text("intro"),
+  // Which PDF look the list exports in; one of TEMPLATES in src/lib/templates.ts.
+  pdfTemplate: text("pdf_template").notNull().default("classic"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

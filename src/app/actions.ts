@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { images, items, lists, sections } from "@/db/schema";
+import { isTemplate } from "@/lib/templates";
 import { checkLogin, endSession, requireUser, safeNext, setupProblem, startSession } from "@/lib/auth";
 import type { ProductInfo } from "@/lib/product";
 import { publicUrl, readPicture, readProductPage } from "@/lib/shopFetch";
@@ -70,6 +71,13 @@ export async function updateList(listId: number, data: { title: string; intro: s
   await touchList(listId);
 }
 
+export async function setPdfTemplate(listId: number, template: string) {
+  await requireUser();
+  if (!isTemplate(template)) return;
+  await db.update(lists).set({ pdfTemplate: template }).where(eq(lists.id, listId));
+  revalidatePath(`/lists/${listId}`);
+}
+
 export async function duplicateList(listId: number) {
   const user = await requireUser();
   const source = await db.query.lists.findFirst({ where: eq(lists.id, listId) });
@@ -77,7 +85,7 @@ export async function duplicateList(listId: number) {
   const newId = await db.transaction(async (tx) => {
     const [copy] = await tx
       .insert(lists)
-      .values({ title: `${source.title} (copy)`, intro: source.intro, createdBy: user })
+      .values({ title: `${source.title} (copy)`, intro: source.intro, pdfTemplate: source.pdfTemplate, createdBy: user })
       .returning({ id: lists.id });
     const oldSections = await tx.select().from(sections).where(eq(sections.listId, listId));
     const sectionMap = new Map<number, number>();
