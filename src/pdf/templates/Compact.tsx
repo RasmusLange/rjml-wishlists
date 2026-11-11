@@ -14,7 +14,8 @@ const s = StyleSheet.create({
   groupTitle: { paddingBottom: 3, borderBottomWidth: 1, borderBottomColor: c.ink, fontWeight: 600, fontSize: 7.5, letterSpacing: 1.2, textTransform: "uppercase" },
   row: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: c.rule },
   box: { width: 8, height: 8, marginTop: 2, marginRight: 8, borderWidth: 0.75, borderColor: c.ink, borderRadius: 1.5 },
-  main: { flexGrow: 1, flexShrink: 1, paddingRight: 10 },
+  // flexBasis 0 lets long text wrap instead of pushing the tag off the page.
+  main: { flexGrow: 1, flexShrink: 1, flexBasis: 0, paddingRight: 10 },
   line: { fontSize: 9, lineHeight: 1.4 },
   name: { fontWeight: 500, color: c.ink, textDecoration: "none" },
   detail: { color: c.grey },
