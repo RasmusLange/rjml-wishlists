@@ -10,17 +10,17 @@ const fonts = path.join(process.cwd(), "src/pdf/fonts");
 Font.register({
   family: "Fraunces",
   fonts: [
-    { src: path.join(fonts, "fraunces-latin-300-normal.woff"), fontWeight: 300 },
-    { src: path.join(fonts, "fraunces-latin-400-normal.woff"), fontWeight: 400 },
-    { src: path.join(fonts, "fraunces-latin-500-normal.woff"), fontWeight: 500 },
+    { src: path.join(fonts, "fraunces-300-normal.ttf"), fontWeight: 300 },
+    { src: path.join(fonts, "fraunces-400-normal.ttf"), fontWeight: 400 },
+    { src: path.join(fonts, "fraunces-500-normal.ttf"), fontWeight: 500 },
   ],
 });
 Font.register({
   family: "Plex",
   fonts: [
-    { src: path.join(fonts, "ibm-plex-sans-latin-400-normal.woff"), fontWeight: 400 },
-    { src: path.join(fonts, "ibm-plex-sans-latin-500-normal.woff"), fontWeight: 500 },
-    { src: path.join(fonts, "ibm-plex-sans-latin-600-normal.woff"), fontWeight: 600 },
+    { src: path.join(fonts, "ibm-plex-sans-400-normal.ttf"), fontWeight: 400 },
+    { src: path.join(fonts, "ibm-plex-sans-500-normal.ttf"), fontWeight: 500 },
+    { src: path.join(fonts, "ibm-plex-sans-600-normal.ttf"), fontWeight: 600 },
   ],
 });
 // Keep words whole instead of hyphenating them.

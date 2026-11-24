@@ -26,13 +26,21 @@ export function extractProduct(parts: PageParts): ProductInfo {
       .replace(/<[^>]*>/g, " ")
       .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
       .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
-      .replace(/&(amp|lt|gt|quot|apos|nbsp|aelig|oslash|aring|AElig|Oslash|Aring|ndash|mdash|hellip|rsquo);/g, (_, n: string) => {
+      .replace(/&([a-zA-Z]+);/g, (whole, n: string) => {
         const map: Record<string, string> = {
           amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
           aelig: "æ", oslash: "ø", aring: "å", AElig: "Æ", Oslash: "Ø", Aring: "Å",
-          ndash: "–", mdash: "—", hellip: "…", rsquo: "’",
+          ndash: "–", mdash: "—", hellip: "…", rsquo: "’", lsquo: "‘", ldquo: "“", rdquo: "”",
+          bdquo: "„", sbquo: "‚", laquo: "«", raquo: "»", euro: "€", times: "×",
         };
-        return map[n];
+        if (n in map) return map[n];
+        // Accented letters, e.g. &aacute; &ocirc; &auml; &scaron; &Lcaron; &lacute;
+        const marks: Record<string, string> = {
+          acute: "\u0301", grave: "\u0300", circ: "\u0302", uml: "\u0308", tilde: "\u0303",
+          caron: "\u030C", ring: "\u030A", cedil: "\u0327", ogon: "\u0328", dblac: "\u030B",
+        };
+        const m = /^([a-zA-Z])(acute|grave|circ|uml|tilde|caron|ring|cedil|ogon|dblac)$/.exec(n);
+        return m ? (m[1] + marks[m[2]]).normalize("NFC") : whole;
       })
       .replace(/\s+/g, " ")
       .trim();

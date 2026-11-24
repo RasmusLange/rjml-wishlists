@@ -41,6 +41,23 @@ async function readCapped(res: Response, max: number): Promise<Uint8Array | null
   return Buffer.concat(chunks);
 }
 
+// Pages aren't always UTF-8: older Central European shops often use
+// windows-1250 or ISO-8859-2. Use the charset the server or page declares.
+function decodeHtml(bytes: Uint8Array, contentType: string | null): string {
+  const head = new TextDecoder("latin1").decode(bytes.subarray(0, 4096));
+  const declared =
+    contentType?.match(/charset=["']?([\w.:-]+)/i)?.[1] ??
+    head.match(/<meta[^>]+charset=["']?([\w.:-]+)/i)?.[1];
+  if (declared) {
+    try {
+      return new TextDecoder(declared.toLowerCase()).decode(bytes);
+    } catch {
+      // Unknown label: fall back to UTF-8.
+    }
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 export type PageResult = { info: ProductInfo } | { error: string };
 
 export async function readProductPage(url: URL): Promise<PageResult> {
@@ -61,7 +78,7 @@ export async function readProductPage(url: URL): Promise<PageResult> {
   if (!res.ok) return { error: `The shop answered with an error (${res.status}). Check the link.` };
   const bytes = await readCapped(res, MAX_PAGE_BYTES);
   if (!bytes) return { error: "That page is too big to read." };
-  const html = new TextDecoder().decode(bytes);
+  const html = decodeHtml(bytes, res.headers.get("content-type"));
   const info = extractProduct(partsFromHtml(html, res.url || url.toString()));
   if (!info.name && !info.imageUrl) {
     return { error: "Couldn't find a product on that page. Try the “Add to wishlist” bookmark on the shop's page." };
